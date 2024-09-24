@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +24,7 @@ func main() {
 	userAgentFilterStr := flag.String("user-agent-filter", "", "Regex pattern to filter user agents")
 	elbStatusCodeFilter := flag.String("elb-status-code-filter", "", "ELB status code to filter")
 	targetStatusCodeFilter := flag.String("target-status-code-filter", "", "Target status code to filter")
+	targetProcessingTimeFilter := flag.String("target-processing-time-filter", "", "Min number of seconds target needed to process request")
 
 	flag.Parse()
 
@@ -75,6 +77,15 @@ func main() {
 
 	if *targetStatusCodeFilter != "" {
 		filters = append(filters, logwarts.FilterByTargetStatusCode(*targetStatusCodeFilter))
+	}
+
+	if *targetProcessingTimeFilter != "" {
+		t, err := strconv.ParseFloat(*targetProcessingTimeFilter, 32)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Invalid target processing time: %v\n", err)
+			os.Exit(1)
+		}
+		filters = append(filters, logwarts.FilterByTargetProcessingTime(float32(t)))
 	}
 
 	var filenames []string

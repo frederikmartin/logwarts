@@ -3,11 +3,13 @@ package logwarts
 import (
 	"bufio"
 	"errors"
-	"github.com/frederikmartin/logwarts/table"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/frederikmartin/logwarts/table"
 )
 
 type LogEntry struct {
@@ -174,6 +176,16 @@ func FilterByELBStatusCode(statusCode string) FilterFunc {
 func FilterByTargetStatusCode(statusCode string) FilterFunc {
 	return func(entry *LogEntry) bool {
 		return entry.TargetStatusCode == statusCode
+	}
+}
+
+func FilterByTargetProcessingTime(processingTime float32) FilterFunc {
+	return func(entry *LogEntry) bool {
+		t, err := strconv.ParseFloat(entry.TargetProcessingTime, 32)
+		if err != nil {
+			return false
+		}
+		return float32(t) >= processingTime
 	}
 }
 
