@@ -100,6 +100,42 @@ Filter by Target status code:
 logwarts --target-status-code-filter=404 alb-logs/*.log
 ```
 
+#### Sorting Entries
+
+You can sort the log entries by `timestamp` or `target-processing-time` in ascending or descending order.
+
+**Sort by Timestamp (Ascending):**
+
+```bash
+logwarts --sort-field=timestamp --sort-order=asc alb-logs/*.log
+```
+
+**Sort by Target Processing Time (Descending):**
+
+```bash
+logwarts --sort-field=target-processing-time --sort-order=desc alb-logs/*.log
+```
+
+**Combining Sorting with Other Filters:**
+
+```bash
+logwarts --url-filter='example\.com' --sort-field=timestamp --sort-order=desc --entries=10 alb-logs/*.log
+```
+
+This command filters entries matching the URL pattern and displays the latest 10 entries sorted by timestamp in descending order.
+
+#### Available Sort Fields and Orders
+
+- **Sort Fields:**
+  - `timestamp`
+  - `target-processing-time`
+
+- **Sort Orders:**
+  - `asc` (ascending)
+  - `desc` (descending)
+
+**Note:** Sorting requires collecting all filtered entries into memory. For very large datasets, this may increase memory usage.
+
 #### Display Simple Output
 
 If you prefer a simplified output showing only the timestamp, URL, and User-Agent, use the `--simple` flag:

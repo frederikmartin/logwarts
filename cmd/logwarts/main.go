@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,6 +28,9 @@ func main() {
 	elbStatusCodeFilter := flag.String("elb-status-code-filter", "", "ELB status code to filter")
 	targetStatusCodeFilter := flag.String("target-status-code-filter", "", "Target status code to filter")
 	targetProcessingTimeFilter := flag.String("target-processing-time-filter", "", "Min number of seconds target needed to process request")
+
+	sortField := flag.String("sort-field", "", "Field to sort by (timestamp or target-processing-time)")
+	sortOrder := flag.String("sort-order", "asc", "Sort order (asc or desc)")
 
 	flag.Parse()
 
@@ -114,7 +118,7 @@ func main() {
 	}
 
 	var (
-		entries = make(logwarts.Logs, 0, *limit)
+		entries      = make(logwarts.Logs, 0, *limit)
 		entriesMutex = &sync.Mutex{}
 	)
 
@@ -141,6 +145,10 @@ func main() {
 		entriesMutex.Unlock()
 	}
 
+	if *sortField != "" {
+		sortEntries(entries, *sortField, *sortOrder)
+	}
+
 	if len(entries) > 0 {
 		subLogs := entries[:min(*limit, len(entries))]
 		if *simple {
@@ -158,4 +166,30 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func sortEntries(entries []logwarts.LogEntry, sortField, sortOrder string) {
+	lessFunc := func(i, j int) bool {
+		switch sortField {
+		case "timestamp":
+			if sortOrder == "asc" {
+				return entries[i].Timestamp.Before(entries[j].Timestamp)
+			}
+			return entries[i].Timestamp.After(entries[j].Timestamp)
+		case "target-processing-time":
+			ti, err1 := strconv.ParseFloat(entries[i].TargetProcessingTime, 64)
+			tj, err2 := strconv.ParseFloat(entries[j].TargetProcessingTime, 64)
+			if err1 != nil || err2 != nil {
+				ti, tj = 0.0, 0.0
+			}
+			if sortOrder == "asc" {
+				return ti < tj
+			}
+			return ti > tj
+		default:
+			return entries[i].Timestamp.Before(entries[j].Timestamp)
+		}
+	}
+
+	sort.Slice(entries, lessFunc)
 }
