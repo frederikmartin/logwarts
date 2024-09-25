@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/frederikmartin/logwarts"
@@ -28,6 +30,7 @@ func main() {
 
 	flag.Parse()
 
+	numWorkers := runtime.NumCPU()
 	filters := []logwarts.FilterFunc{}
 
 	if *startTimeStr != "" || *endTimeStr != "" {
@@ -110,9 +113,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	entries := logwarts.Logs{}
+	var (
+		entries = make(logwarts.Logs, 0, *numEntries)
+		entriesMutex = &sync.Mutex{}
+	)
 
 	processor := func(entry *logwarts.LogEntry) {
+		entriesMutex.Lock()
+		defer entriesMutex.Unlock()
 		if len(entries) >= *numEntries {
 			return
 		}
@@ -120,14 +128,17 @@ func main() {
 	}
 
 	for _, filename := range filenames {
-		err := logwarts.ParseLogs(filename, filters, processor)
+		err := logwarts.ParseLogs(filename, filters, processor, numWorkers)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error parsing log file '%s': %v\n", filename, err)
 			os.Exit(1)
 		}
+		entriesMutex.Lock()
 		if len(entries) >= *numEntries {
+			entriesMutex.Unlock()
 			break
 		}
+		entriesMutex.Unlock()
 	}
 
 	if len(entries) > 0 {

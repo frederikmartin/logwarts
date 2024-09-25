@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/frederikmartin/logwarts/table"
@@ -48,7 +49,7 @@ type Logs []LogEntry
 
 type FilterFunc func(*LogEntry) bool
 
-func ParseLogs(filename string, filters []FilterFunc, processor func(*LogEntry)) error {
+func ParseLogs(filename string, filters []FilterFunc, processor func(*LogEntry), numWorkers int) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -58,9 +59,43 @@ func ParseLogs(filename string, filters []FilterFunc, processor func(*LogEntry))
 	}
 	defer file.Close()
 
-	s := bufio.NewScanner(file)
-	for s.Scan() {
-		line := s.Text()
+	lineChan := make(chan string, 100)
+	entryChan := make(chan *LogEntry, 100)
+	var wg sync.WaitGroup
+
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go logWorker(&wg, lineChan, entryChan, filters)
+	}
+
+	go func() {
+		s := bufio.NewScanner(file)
+		for s.Scan() {
+			line := s.Text()
+			lineChan <- line
+		}
+		close(lineChan)
+	}()
+
+	go func() {
+		wg.Wait()
+		close(entryChan)
+	}()
+
+	for entry := range entryChan {
+		processor(entry)
+	}
+
+	if err := file.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func logWorker(wg *sync.WaitGroup, lineChan <-chan string, entryChan chan<- *LogEntry, filters []FilterFunc) {
+	defer wg.Done()
+	for line := range lineChan {
 		fields := parseLogLine(line)
 		if len(fields) >= 25 {
 			timestamp, err := time.Parse(time.RFC3339Nano, fields[1])
@@ -116,16 +151,10 @@ func ParseLogs(filename string, filters []FilterFunc, processor func(*LogEntry))
 			}
 
 			if include {
-				processor(entry)
+				entryChan <- entry
 			}
 		}
 	}
-
-	if err := s.Err(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func parseLogLine(line string) []string {
