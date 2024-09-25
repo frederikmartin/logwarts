@@ -50,6 +50,11 @@ update-deps: ## Update project dependencies to their latest versions
 .PHONY: check
 check: fmt test ## Format code and run tests
 
+.PHONY: symlink
+symlink: build ## Create symlink in /usr/local/bin
+	@echo "Symlinking logwarts..."
+	@sudo ln -s $(PWD)/build/logwarts /usr/local/bin/logwarts
+
 .PHONY: help
 help: ## Display this help message
 	@echo "Available commands:"
