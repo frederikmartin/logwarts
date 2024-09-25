@@ -6,19 +6,19 @@ Welcome to **Logwarts**, an open-source command-line tool designed for efficient
 
 ## Features
 
-- **Easy Parsing**: Quickly parse through various ALB log files with ease.
-- **Streaming Processing**: Efficiently processes logs without loading everything into memory.
-- **Advanced Filtering**: Use powerful filtering options to zero in on significant data.
-- **Customizable Output**: Display results in detailed or simple formats.
-- **Spellbinding Speed**: Blazingly™ fast processing of large log files.
-- **AWS ELB S3 Access**: *(Coming Soon)* Parse files directly from S3 to avoid overhead.
+- **Easy Parsing**: Quickly parse through various ALB log files with ease
+- **Streaming Processing**: Efficiently processes logs without loading everything into memory
+- **Advanced Filtering**: Use powerful filtering options to zero in on significant data
+- **Customizable Output**: Display results in detailed or simple formats
+- **Spellbinding Speed**: Blazingly™ fast processing of large log files
+- **AWS ELB S3 Access**: *(Coming Soon)* Parse files directly from S3 to avoid overhead
 
 ### Ideas
 
-- SQL-like query language / LogStash-like filtering.
-- Analytics report export.
-- Aggregate over multiple log files.
-- Streaming of log event updates.
+- SQL-like query language / LogStash-like filtering
+- Analytics report export
+- Aggregate over multiple log files
+- Streaming of log event updates
 - Make available via Homebrew
 
 ## Prerequisites
@@ -40,25 +40,19 @@ To install Logwarts, you can build it from source using Go. Follow the steps bel
     git clone https://github.com/frederikmartin/logwarts.git
     cd logwarts
     ```
-2. **Install dependencies**
-    Ensure you have Go installed (version 1.13 or higher).
-
-    ```bash
-    make deps
-    ```
-3. **Build the project**
+2. **Build the project**
 
     ```bash
     make build
     ```
     This will create an executable named `logwarts` in the project directory.
-4. **Install the executable**
-    Move the executable to a directory in your `$PATH` (e.g., `/usr/local/bin`):
+3. **Install the executable**
+    Symlink the executable to a directory in your `$PATH` (e.g., `/usr/local/bin`):
 
     ```bash
-    sudo mv logwarts /usr/local/bin/
+    make symlink
     ```
-    You can now run `logwarts` from anywhere in your terminal.
+    Source your terminal profile and you can start running `logwarts` from anywhere in your terminal.
 
 ### Usage
 
@@ -67,7 +61,7 @@ To install Logwarts, you can build it from source using Go. Follow the steps bel
 Here's a quick example of how to use Logwarts with locally available ALB log files:
 
 ```bash
-logwarts --entries=5 --url-filter='example\.com' alb-logs/*.log
+logwarts --limit=5 --url-filter='example\.com' alb-logs/*.log
 ```
 
 This command parses the specified log files and displays up to 5 log entries where the URL matches the regular expression `example\.com`.
@@ -77,7 +71,7 @@ This command parses the specified log files and displays up to 5 log entries whe
 If you have a list of log filenames, you can pipe them into Logwarts using the `--input` flag:
 
 ```bash
-ls alb-logs/*.log | logwarts --input --entries=5 --user-agent-filter='Mozilla'
+ls alb-logs/*.log | logwarts --input --limit=5 --user-agent-filter='Mozilla'
 ```
 
 This command reads filenames from `stdin` and displays up to 5 log entries where the User-Agent matches `Mozilla`.
@@ -123,7 +117,7 @@ logwarts --start="2018-11-30T22:00:00Z" --end="2018-11-30T23:00:00Z" \
          --url-filter='secure\.example\.org' \  
          --user-agent-filter='Mozilla' \  
          --elb-status-code-filter=200 \  
-         --entries=10 \  
+         --limit=10 \  
          alb-logs/*.log
  ```
 
@@ -147,7 +141,7 @@ While direct S3 processing is in development, you can manually download the logs
 aws s3 cp s3://your-alb-log-bucket/path/to/logs/ tempdir --recursive
 cd tempdir
 gunzip \*.gz
-logwarts --entries=5 tempdir/\*.log
+logwarts --limit=5 tempdir/\*.log
 ```
 
 ## Example Scenarios
@@ -157,7 +151,7 @@ logwarts --entries=5 tempdir/\*.log
 To find entries where the ELB or target returned an error status code (e.g., `500`):
 
 ```bash
-logwarts --elb-status-code-filter=500 --entries=10 alb-logs/*.log
+logwarts --elb-status-code-filter=500 --limit=10 alb-logs/*.log
 ```
 
 #### Scenario 2: Search for Specific User-Agent
@@ -165,7 +159,7 @@ logwarts --elb-status-code-filter=500 --entries=10 alb-logs/*.log
 To find entries from a specific User-Agent, such as `curl`:
 
 ```bash
-logwarts --user-agent-filter='curl' --entries=5 alb-logs/*.log
+logwarts --user-agent-filter='curl' --limit=5 alb-logs/*.log
 ```
 
 #### Scenario 3: Simplified Output for a Time Range
