@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/frederikmartin/logwarts"
@@ -121,6 +122,13 @@ func main() {
 		entriesMutex = &sync.Mutex{}
 	)
 
+	numWorkers := runtime.NumCPU()
+	var (
+		totalEntriesFound     int64
+		totalEntriesProcessed int64
+	)
+	startTime := time.Now()
+
 	processor := func(entry *logwarts.LogEntry) {
 		entriesMutex.Lock()
 		defer entriesMutex.Unlock()
@@ -128,12 +136,11 @@ func main() {
 			return
 		}
 		entries = append(entries, *entry)
+		atomic.AddInt64(&totalEntriesFound, 1)
 	}
 
-	numWorkers := runtime.NumCPU()
-
 	for _, filename := range filenames {
-		err := logwarts.ParseLogs(filename, filters, processor, numWorkers)
+		err := logwarts.ParseLogs(filename, filters, processor, numWorkers, &totalEntriesProcessed)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error parsing log file '%s': %v\n", filename, err)
 			os.Exit(1)
@@ -166,6 +173,12 @@ func main() {
 	} else {
 		fmt.Println("No matching log entries found")
 	}
+
+	elapsedTime := time.Since(startTime)
+	fmt.Printf("\nStatistics:\n")
+	fmt.Printf("Total log entries found: %d\n", totalEntriesFound)
+	fmt.Printf("Total log entries processed: %d\n", totalEntriesProcessed)
+	fmt.Printf("Processing time: %s\n", elapsedTime)
 }
 
 func min(a, b int) int {

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/frederikmartin/logwarts/table"
@@ -49,7 +50,7 @@ type Logs []LogEntry
 
 type FilterFunc func(*LogEntry) bool
 
-func ParseLogs(filename string, filters []FilterFunc, processor func(*LogEntry), numWorkers int) error {
+func ParseLogs(filename string, filters []FilterFunc, processor func(*LogEntry), numWorkers int, totalEntriesProcessed *int64) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -65,7 +66,7 @@ func ParseLogs(filename string, filters []FilterFunc, processor func(*LogEntry),
 
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
-		go logWorker(&wg, lineChan, entryChan, filters)
+		go logWorker(&wg, lineChan, entryChan, filters, totalEntriesProcessed)
 	}
 
 	go func() {
@@ -93,9 +94,10 @@ func ParseLogs(filename string, filters []FilterFunc, processor func(*LogEntry),
 	return nil
 }
 
-func logWorker(wg *sync.WaitGroup, lineChan <-chan string, entryChan chan<- *LogEntry, filters []FilterFunc) {
+func logWorker(wg *sync.WaitGroup, lineChan <-chan string, entryChan chan<- *LogEntry, filters []FilterFunc, totalEntriesProcessed *int64) {
 	defer wg.Done()
 	for line := range lineChan {
+		atomic.AddInt64(totalEntriesProcessed, 1)
 		fields := parseLogLine(line)
 		if len(fields) >= 25 {
 			timestamp, err := time.Parse(time.RFC3339Nano, fields[1])
