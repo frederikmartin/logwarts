@@ -17,7 +17,7 @@ import (
 
 func main() {
 	input := flag.Bool("input", false, "Read filenames from stdin")
-	numEntries := flag.Int("entries", 3, "Number of log entries to show")
+	limit := flag.Int("limit", 3, "Limit number of log entries for output")
 	simple := flag.Bool("simple", false, "Show only the URL and the timestamp")
 
 	startTimeStr := flag.String("start", "", "Start timestamp (inclusive) for filtering (RFC3339 format)")
@@ -114,14 +114,14 @@ func main() {
 	}
 
 	var (
-		entries = make(logwarts.Logs, 0, *numEntries)
+		entries = make(logwarts.Logs, 0, *limit)
 		entriesMutex = &sync.Mutex{}
 	)
 
 	processor := func(entry *logwarts.LogEntry) {
 		entriesMutex.Lock()
 		defer entriesMutex.Unlock()
-		if len(entries) >= *numEntries {
+		if len(entries) >= *limit {
 			return
 		}
 		entries = append(entries, *entry)
@@ -134,7 +134,7 @@ func main() {
 			os.Exit(1)
 		}
 		entriesMutex.Lock()
-		if len(entries) >= *numEntries {
+		if len(entries) >= *limit {
 			entriesMutex.Unlock()
 			break
 		}
@@ -142,7 +142,7 @@ func main() {
 	}
 
 	if len(entries) > 0 {
-		subLogs := entries[:min(*numEntries, len(entries))]
+		subLogs := entries[:min(*limit, len(entries))]
 		if *simple {
 			subLogs.PrintSimple()
 		} else {
