@@ -4,6 +4,8 @@ Welcome to **Logwarts**, an open-source command-line tool designed for efficient
 
 **Hint:** If you have several GB of log data collected over a long period of time, Logwarts can process these logs efficiently without loading all data into memory, thanks to its streaming processing. However, for very large datasets, consider using AWS Athena to query the data.
 
+![Logwarts Screenshot](./docs/screenshot.png)
+
 ## Features
 
 - **Easy Parsing**: Quickly parse through various ALB log files with ease
@@ -25,8 +27,8 @@ Welcome to **Logwarts**, an open-source command-line tool designed for efficient
 
 To get the most out of Logwarts, ensure that:
 
-- Access logging is enabled on your ALBs.
-- Log files are available locally or in an S3 bucket you can access.
+- Access logging is enabled on your ALBs
+- Log files are available locally or in an S3 bucket you can access
 
 ## Getting Started
 
@@ -52,7 +54,7 @@ To install Logwarts, you can build it from source using Go. Follow the steps bel
     ```bash
     make symlink
     ```
-    Source your terminal profile and you can start running `logwarts` from anywhere in your terminal.
+    Restart your terminal session and you can start running `logwarts` from anywhere in your terminal.
 
 ### Usage
 
