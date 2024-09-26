@@ -2,7 +2,9 @@ package logwarts
 
 import (
 	"bufio"
+	"compress/gzip"
 	"errors"
+	"io"
 	"os"
 	"regexp"
 	"strconv"
@@ -60,6 +62,12 @@ func ParseLogs(filename string, filters []FilterFunc, processor func(*LogEntry),
 	}
 	defer file.Close()
 
+	reader, err := getReader(file)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
 	lineChan := make(chan string, 100)
 	entryChan := make(chan *LogEntry, 100)
 	var wg sync.WaitGroup
@@ -70,7 +78,7 @@ func ParseLogs(filename string, filters []FilterFunc, processor func(*LogEntry),
 	}
 
 	go func() {
-		s := bufio.NewScanner(file)
+		s := bufio.NewScanner(reader)
 		for s.Scan() {
 			line := s.Text()
 			lineChan <- line
@@ -87,7 +95,7 @@ func ParseLogs(filename string, filters []FilterFunc, processor func(*LogEntry),
 		processor(entry)
 	}
 
-	if err := file.Close(); err != nil {
+	if err := reader.Close(); err != nil {
 		return err
 	}
 
@@ -172,6 +180,26 @@ func parseLogLine(line string) []string {
 		}
 	}
 	return fields
+}
+
+func getReader(file *os.File) (io.ReadCloser, error) {
+	buf := make([]byte, 2)
+	if _, err := file.Read(buf); err != nil {
+		return nil, err
+	}
+
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+
+	if buf[0] == 0x1F && buf[1] == 0x8B {
+		gzReader, err := gzip.NewReader(file)
+		if err != nil {
+			return nil, err
+		}
+		return gzReader, nil
+	}
+	return file, nil
 }
 
 func FilterByTime(start, end time.Time) FilterFunc {
