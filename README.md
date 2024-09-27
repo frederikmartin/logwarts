@@ -36,19 +36,25 @@ To get the most out of Logwarts, ensure that:
 
 To install Logwarts, you can build it from source using Go. Follow the steps below:
 
-1. **Clone the repository**
+1. **Install go**
+    
+    You can use `asdf` to install the required language dependencies defined in `.tool-versions` file:
+    ```bash
+    asdf install
+    ```
+2. **Clone the repository**
 
     ```bash
     git clone https://github.com/frederikmartin/logwarts.git
     cd logwarts
     ```
-2. **Build the project**
+3. **Build the project**
 
     ```bash
     make build
     ```
     This will create an executable named `logwarts` in the project directory.
-3. **Install the executable**
+4. **Install the executable**
     Symlink the executable to a directory in your `$PATH` (e.g., `/usr/local/bin`):
 
     ```bash
