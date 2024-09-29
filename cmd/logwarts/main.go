@@ -148,7 +148,7 @@ var importCmd = &cobra.Command{
 				fmt.Printf("Failed to import logs from directory: %v\n", err)
 				return
 			}
-			fmt.Printf("Successfully imported logs from S3 to db.\n")
+			fmt.Printf("Successfully imported logs from S3 to db\n")
 
 		} else if source == "local" {
 			var files []string
@@ -177,7 +177,7 @@ var importCmd = &cobra.Command{
 					fmt.Printf("Failed to import file '%s': %v\n", filePath, err)
 					continue
 				}
-				fmt.Printf("Successfully imported file '%s' into db.\n", filePath)
+				fmt.Printf("Successfully imported file '%s' into db\n", filePath)
 			}
 
 		} else {
