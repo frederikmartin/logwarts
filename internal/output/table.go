@@ -1,4 +1,4 @@
-package table
+package output
 
 import "C"
 import (
