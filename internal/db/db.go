@@ -127,7 +127,7 @@ func ImportLogFile(db *sql.DB, logFilePath string) error {
 			'classification_reason',
 			'conn_trace_id',
 		]
-	)`, tableName, logFilePath)
+	);`, tableName, logFilePath)
 	_, err = db.Exec(query)
 	if err != nil {
 		return fmt.Errorf("Failed to import log file: %v", err)
@@ -157,6 +157,19 @@ func ImportDirectoryLogs(db *sql.DB, dirPath string) error {
 
 func ExecuteQuery(db *sql.DB, query string) (*sql.Rows, error) {
 	return db.Query(query)
+}
+
+func DeleteLogs(db *sql.DB) error {
+	activeSessions, err := session.GetActiveSession()
+	if err != nil {
+		return fmt.Errorf("Failed to get active session for import: %v", err)
+	}
+	tableName := fmt.Sprintf("alb_logs_%s", activeSessions.Name)
+
+	query := fmt.Sprintf(`DROP TABLE %s;`, tableName)
+
+	_, err = db.Exec(query)
+	return err
 }
 
 func GetFilteredStats(db *sql.DB, filter string) (*sql.Rows, error) {

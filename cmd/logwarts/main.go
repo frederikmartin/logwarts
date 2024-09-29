@@ -55,8 +55,8 @@ func init() {
 }
 
 var sessionCmd = &cobra.Command{
-	Use:   "session [create|attach|list] name",
-	Short: "Manage sessions (create, attach, list)",
+	Use:   "session [create|attach|list|kill] name",
+	Short: "Manage sessions (create, attach, list, kill)",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		action := args[0]
@@ -91,8 +91,26 @@ var sessionCmd = &cobra.Command{
 					fmt.Printf("- %s\n", session.Name)
 				}
 			}
+		case "kill":
+			dbConn, err := db.Connect("logwarts.duckdb")
+			if err != nil {
+				fmt.Printf("Failed to connect to db: %v\n", err)
+				return
+			}
+			defer dbConn.Close()
+
+			err = db.DeleteLogs(dbConn)
+			if err != nil {
+				fmt.Println("Error killing session's logs:", err)
+				return
+			}
+			err = session.KillSession()
+			if err != nil {
+				fmt.Println("Error killing current session:", err)
+				return
+			}
 		default:
-			fmt.Println("Unknown session command. Use 'create', 'attach', or 'list'")
+			fmt.Println("Unknown session command. Use 'create', 'attach', 'list', or 'kill'")
 		}
 	},
 }

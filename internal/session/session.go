@@ -158,6 +158,23 @@ func ListSessions() ([]Session, error) {
 	return sessions, nil
 }
 
+func KillSession() error {
+	sessionLock.Lock()
+	defer sessionLock.Unlock()
+
+	if sessionDB == nil {
+		return fmt.Errorf("sessionDB is not initialized. Please call Initialize() first")
+	}
+
+	query := `DELETE FROM sessions WHERE state = 'active'`
+	_, err := sessionDB.Exec(query)
+	if err != nil {
+		return fmt.Errorf("Failed to kill session: %v", err)
+	}
+
+	return nil
+}
+
 func Close() error {
 	if sessionDB != nil {
 		return sessionDB.Close()
