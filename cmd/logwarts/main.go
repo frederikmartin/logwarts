@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/frederikmartin/logwarts/internal/db"
@@ -14,11 +15,12 @@ import (
 )
 
 var (
-	bucket      string
-	prefix      string
-	downloadDir string
-	source      string
-	files       []string
+	bucket             string
+	prefix             string
+	downloadDir        string
+	source             string
+	files              []string
+	statsRequestFilter string
 )
 
 var rootCmd = &cobra.Command{
@@ -40,14 +42,16 @@ func main() {
 }
 
 func init() {
-	importCmd.Flags().StringVar(&source, "source", "s3", "Source of the logs: 's3' or 'local'")
-	importCmd.Flags().StringSliceVar(&files, "files", []string{}, "Comma-separated list of local files to import (required for local import)")
+	importCmd.Flags().StringVarP(&source, "source", "s", "s3", "Source of the logs: 's3' or 'local'")
+	importCmd.Flags().StringSliceVarP(&files, "files", "f", []string{}, "Comma-separated list of local files to import (required for local import)")
 
-	importCmd.Flags().StringVar(&bucket, "bucket", "", "S3 bucket name")
-	importCmd.Flags().StringVar(&prefix, "prefix", "", "S3 prefix (folder path) for ALB logs")
-	importCmd.Flags().StringVar(&downloadDir, "download-dir", "./logs", "Local directory to store downloaded logs")
+	importCmd.Flags().StringVarP(&bucket, "bucket", "b", "", "S3 bucket name")
+	importCmd.Flags().StringVarP(&prefix, "prefix", "p", "", "S3 prefix (folder path) for ALB logs")
+	importCmd.Flags().StringVarP(&downloadDir, "download-dir", "d", "./logs", "Local directory to store downloaded logs")
 
-	rootCmd.AddCommand(sessionCmd, importCmd, queryCmd)
+	statsCmd.Flags().StringVarP(&statsRequestFilter, "filter", "f", "", "Regex pattern to filter requests")
+
+	rootCmd.AddCommand(sessionCmd, importCmd, queryCmd, statsCmd)
 }
 
 var sessionCmd = &cobra.Command{
@@ -191,6 +195,44 @@ var queryCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
+}
+
+var statsCmd = &cobra.Command{
+	Use:   "stats",
+	Short: "Show performance statistics",
+	Run: func(cmd *cobra.Command, args []string) {
+		dbConn, err := db.Connect("logwarts.duckdb")
+		if err != nil {
+			fmt.Printf("Failed to connect to db: %v\n", err)
+			os.Exit(1)
+		}
+		defer dbConn.Close()
+
+		sanitizedFilter, err := sanitizeRegex(statsRequestFilter)
+		if err != nil {
+			fmt.Printf("Filter is not a valid regex pattern: %v", err)
+			os.Exit(1)
+		}
+		stats, err := db.GetFilteredStats(dbConn, sanitizedFilter)
+		if err != nil {
+			fmt.Printf("Failed to retrieve stats: %v\n", err)
+			os.Exit(1)
+		}
+
+		err = displayResults(stats)
+		if err != nil {
+			fmt.Printf("Failed to display results: %v\n", err)
+			os.Exit(1)
+		}
+	},
+}
+
+func sanitizeRegex(pattern string) (string, error) {
+	_, err := regexp.Compile(pattern)
+	if err != nil {
+		return "", err
+	}
+	return pattern, nil
 }
 
 func displayResults(rows *sql.Rows) error {

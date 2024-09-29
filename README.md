@@ -59,9 +59,9 @@ To install Logwarts, you can build it from source using Go. Follow the steps bel
     ```
     Restart your terminal session and you can start running `logwarts` from anywhere in your terminal.
 
-### Usage
+## Usage
 
-#### Session Management
+### Session Management
 
 Logwarts introduces a tmux-like session management model, allowing you to create, switch, and attach to multiple sessions, each having its own ALB log table. This feature provides greater flexibility when dealing with different sets of logs and contexts.
 
@@ -72,7 +72,7 @@ logwarts session create my_session
 
 This command creates a new session named `my_session` and automatically sets it as active. All subsequent imports and queries will be tied to this session's ALB log table.
 
-#### Session-based Log Import
+### Session-based Log Import
 
 When importing logs, Logwarts now dynamically creates a new ALB log table for each session, allowing you to maintain separate log data for different contexts. This eliminates the need to mix data from different sources or analysis sessions.
 
@@ -80,7 +80,7 @@ When importing logs, Logwarts now dynamically creates a new ALB log table for ea
 logwarts import --source=local --files=my_log_file.log
 ```
 
-#### Querying Data from Active Session
+### Querying Data from Active Session
 
 All data imported during the active session will be accessible for queries. For example:
 ```bash
@@ -88,6 +88,16 @@ logwarts query "SELECT * FROM alb_logs LIMIT 10;"
 ```
 
 This command retrieves the first 10 rows from the ALB log table associated with the active session `my_session`.
+
+### Displaying Statistics with a Request Filter
+
+You can filter log entries using a regex pattern on the `request` field to analyze specific types of requests.
+
+**Example: Analyze all GET requests to `/api/v1/login`
+
+```bash
+logwarts stats --filter="POST /api/v1/login.*"
+```
 
 ### Examples
 

@@ -158,3 +158,29 @@ func ImportDirectoryLogs(db *sql.DB, dirPath string) error {
 func ExecuteQuery(db *sql.DB, query string) (*sql.Rows, error) {
 	return db.Query(query)
 }
+
+func GetFilteredStats(db *sql.DB, filter string) (*sql.Rows, error) {
+	activeSessions, err := session.GetActiveSession()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get active session for import: %v", err)
+	}
+	tableName := fmt.Sprintf("alb_logs_%s", activeSessions.Name)
+
+	query := fmt.Sprintf(`
+	SELECT
+            DATE_TRUNC('minute', time) AS minute,
+            COUNT(*) AS requests,
+            MIN(target_processing_time) AS min_response_time,
+            MAX(target_processing_time) AS max_response_time,
+            AVG(target_processing_time) AS avg_response_time
+        FROM
+            %s
+	WHERE REGEXP_MATCHES(request, '%s')
+	GROUP BY
+            minute
+        ORDER BY
+            minute;
+	`, tableName, filter)
+
+	return db.Query(query)
+}
