@@ -166,7 +166,7 @@ func DeleteLogs(db *sql.DB) error {
 	}
 	tableName := fmt.Sprintf("alb_logs_%s", activeSessions.Name)
 
-	query := fmt.Sprintf(`DROP TABLE %s;`, tableName)
+	query := fmt.Sprintf(`DROP TABLE IF EXISTS %s;`, tableName)
 
 	_, err = db.Exec(query)
 	return err

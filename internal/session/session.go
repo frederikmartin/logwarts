@@ -66,12 +66,22 @@ func CreateSession(name string) error {
 		return fmt.Errorf("sessionDB is not initialized. Please call Initialize() first")
 	}
 
+	inactivateSessionsQuery := `UPDATE sessions SET state = 'inactive' WHERE state = 'active'`
+	_, err := sessionDB.Exec(inactivateSessionsQuery)
+	if err != nil {
+		return fmt.Errorf("Failed to inactivate sessions: %v", err)
+	}
+
+	sessionName, err := SanitizeSessionName(name)
+	if err != nil {
+		return fmt.Errorf("Invalid session name: %v", err)
+	}
 	insertQuery := `INSERT INTO sessions (name, state) VALUES (?, 'active')`
-	_, err := sessionDB.Exec(insertQuery, name)
+	_, err = sessionDB.Exec(insertQuery, sessionName)
 	if err != nil {
 		return fmt.Errorf("Failed to create session: %v", err)
 	}
-	fmt.Printf("Session '%s' created successfully\n", name)
+	fmt.Printf("Session '%s' created successfully\n", sessionName)
 	return nil
 }
 
