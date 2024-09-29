@@ -1,6 +1,6 @@
 # Logwarts
 
-Welcome to **Logwarts**, an open-source command-line tool designed for efficient and magical processing of AWS Application Load Balancer (ALB) log files. Inspired by the wizarding world, Logwarts aims to bring a bit of magic to your log analysis tasks.
+Welcome to **Logwarts**, an open-source command-line tool designed for efficient, magical and AWS Athena-like processing of AWS Application Load Balancer (ALB) log files. Inspired by the wizarding world, Logwarts aims to bring a bit of magic to your log analysis tasks.
 
 **Hint:** If you have several GB of log data collected over a long period of time, Logwarts can process these logs efficiently without loading all data into memory, thanks to its streaming processing. However, for very large datasets, consider using AWS Athena to query the data.
 
@@ -70,7 +70,7 @@ Logwarts introduces a tmux-like session management model, allowing you to create
 logwarts session create my_session
 ```
 
-This command creates a new session named `my_session1` and automatically sets it as active. All subsequent imports and queries will be tied to this session's ALB log table.
+This command creates a new session named `my_session` and automatically sets it as active. All subsequent imports and queries will be tied to this session's ALB log table.
 
 #### Session-based Log Import
 
@@ -87,7 +87,7 @@ All data imported during the active session will be accessible for queries. For 
 logwarts query "SELECT * FROM alb_logs LIMIT 10;"
 ```
 
-This command retrieves the first 10 rows from the ALB log table associated with the active session `my_session1`.
+This command retrieves the first 10 rows from the ALB log table associated with the active session `my_session`.
 
 ### Examples
 
