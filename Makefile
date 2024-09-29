@@ -24,7 +24,7 @@ test: ## Run all tests with verbose output
 .PHONY: build
 build: ## Build the binary executable
 	@echo "Building the project..."
-	@$(GOBUILD) -o ./build/$(BINARY_NAME) ./cmd/logwarts.go
+	@$(GOBUILD) -o ./build/$(BINARY_NAME) ./cmd/logwarts/main.go
 
 .PHONY: clean
 clean: ## Clean build artifacts and remove the binary
