@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"database/sql"
 	"fmt"
 	"os"
@@ -19,7 +20,6 @@ var (
 	prefix             string
 	downloadDir        string
 	source             string
-	files              []string
 	statsRequestFilter string
 )
 
@@ -42,8 +42,7 @@ func main() {
 }
 
 func init() {
-	importCmd.Flags().StringVarP(&source, "source", "s", "s3", "Source of the logs: 's3' or 'local'")
-	importCmd.Flags().StringSliceVarP(&files, "files", "f", []string{}, "Comma-separated list of local files to import (required for local import)")
+	importCmd.Flags().StringVarP(&source, "source", "s", "s3", "Source of the logs: 's3' or 'local' (local files are read from stdin)")
 
 	importCmd.Flags().StringVarP(&bucket, "bucket", "b", "", "S3 bucket name")
 	importCmd.Flags().StringVarP(&prefix, "prefix", "p", "", "S3 prefix (folder path) for ALB logs")
@@ -152,9 +151,17 @@ var importCmd = &cobra.Command{
 			fmt.Printf("Successfully imported logs from S3 to db.\n")
 
 		} else if source == "local" {
-			if len(files) == 0 {
-				fmt.Println("Please provide at least one file path using --files for local import")
-				return
+			var files []string
+			s := bufio.NewScanner(os.Stdin)
+			for s.Scan() {
+				filename := strings.TrimSpace(s.Text())
+				if filename != "" {
+					files = append(files, filename)
+				}
+			}
+			if err := s.Err(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error reading from stdin: %v\n", err)
+				os.Exit(1)
 			}
 
 			dbConn, err := db.Connect("logwarts.duckdb")

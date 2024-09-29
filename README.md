@@ -77,7 +77,7 @@ This command creates a new session named `my_session` and automatically sets it 
 When importing logs, Logwarts now dynamically creates a new ALB log table for each session, allowing you to maintain separate log data for different contexts. This eliminates the need to mix data from different sources or analysis sessions.
 
 ```bash
-logwarts import --source=local --files=my_log_file.log
+ls ./logs/*.log | logwarts import --source=local
 ```
 
 ### Querying Data from Active Session
