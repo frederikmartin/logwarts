@@ -50,6 +50,11 @@ update-deps: ## Update project dependencies to their latest versions
 .PHONY: check
 check: fmt test ## Format code and run tests
 
+.PHONY: tidy
+tidy: ## Scan dependencies for vulnerabilities
+	@echo "Checking dependencies..."
+	@$(GOCMD) mod tidy
+
 .PHONY: symlink
 symlink: build ## Create symlink in /usr/local/bin
 	@echo "Symlinking logwarts..."
