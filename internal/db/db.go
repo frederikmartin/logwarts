@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/frederikmartin/logwarts/internal/session"
@@ -16,7 +17,20 @@ func Connect(dbPath string) (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to connect to duckdb: %v", err)
 	}
+	err = configure(db, runtime.NumCPU())
+	if err != nil {
+		return nil, fmt.Errorf("Failed to config duckdb: %v", err)
+	}
 	return db, nil
+}
+
+func configure(db *sql.DB, threads int) error {
+	query := fmt.Sprintf("SET threads=%d;", threads)
+	_, err := db.Exec(query)
+	if err != nil {
+		return fmt.Errorf("Failed to set threads: %v", err)
+	}
+	return nil
 }
 
 func InitializeLogTable(db *sql.DB) error {
