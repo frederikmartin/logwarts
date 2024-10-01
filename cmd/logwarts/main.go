@@ -189,8 +189,8 @@ var importCmd = &cobra.Command{
 					fmt.Printf("Failed to import file '%s': %v\n", filePath, err)
 					continue
 				}
-				fmt.Printf("Successfully imported file '%s' into db\n", filePath)
 			}
+			fmt.Printf("Successfully imported %d file(s)\n", len(files))
 
 		} else {
 			fmt.Println("Invalid source specified. Use 's3' or 'local'.")
