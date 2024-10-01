@@ -68,6 +68,18 @@ var sessionCmd = &cobra.Command{
 			if err := session.CreateSession(args[1]); err != nil {
 				fmt.Println("Error creating session:", err)
 			}
+
+			dbConn, err := db.Connect("logwarts.duckdb")
+			if err != nil {
+				fmt.Printf("Failed to connect to db: %v\n", err)
+				return
+			}
+			defer dbConn.Close()
+			err = db.InitializeLogTable(dbConn)
+			if err != nil {
+				fmt.Printf("Failed to initialize log table: %v\n", err)
+				return
+			}
 		case "attach":
 			if len(args) < 2 {
 				fmt.Println("Session name is required for 'attach'")
