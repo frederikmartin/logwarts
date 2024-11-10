@@ -22,6 +22,7 @@ type Session struct {
 	UpdatedAt time.Time
 	Name      string
 	State     string
+	DBPath    string
 }
 
 func Init() error {
@@ -42,7 +43,8 @@ func Init() error {
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		name TEXT UNIQUE NOT NULL,
-		state TEXT NOT NULL
+		state TEXT NOT NULL,
+		db_path TEXT NOT NULL
 	);
 	CREATE TRIGGER IF NOT EXISTS update_sessions_updated_at
 		AFTER UPDATE ON sessions
@@ -58,7 +60,7 @@ func Init() error {
 	return nil
 }
 
-func CreateSession(name string) error {
+func CreateSession(name string, dbPath string) error {
 	sessionLock.Lock()
 	defer sessionLock.Unlock()
 
@@ -76,8 +78,8 @@ func CreateSession(name string) error {
 	if err != nil {
 		return fmt.Errorf("Invalid session name: %v", err)
 	}
-	insertQuery := `INSERT INTO sessions (name, state) VALUES (?, 'active')`
-	_, err = sessionDB.Exec(insertQuery, sessionName)
+	insertQuery := `INSERT INTO sessions (name, state, db_path) VALUES (?, 'active', ?)`
+	_, err = sessionDB.Exec(insertQuery, sessionName, dbPath)
 	if err != nil {
 		return fmt.Errorf("Failed to create session: %v", err)
 	}
@@ -128,10 +130,10 @@ func GetActiveSession() (*Session, error) {
 		return nil, fmt.Errorf("sessionDB is not initialized. Please call Initialize() first")
 	}
 
-	selectQuery := `SELECT id, created_at, updated_at, name, state FROM sessions WHERE state = 'active'`
+	selectQuery := `SELECT id, created_at, updated_at, name, state, db_path FROM sessions WHERE state = 'active'`
 	var session Session
 	row := sessionDB.QueryRow(selectQuery)
-	if err := row.Scan(&session.ID, &session.CreatedAt, &session.UpdatedAt, &session.Name, &session.State); err != nil {
+	if err := row.Scan(&session.ID, &session.CreatedAt, &session.UpdatedAt, &session.Name, &session.State, &session.DBPath); err != nil {
 		return nil, fmt.Errorf("No active session found")
 	}
 	return &session, nil
@@ -146,7 +148,7 @@ func ListSessions() ([]Session, error) {
 	}
 
 	var sessions []Session
-	query := `SELECT id, created_at, updated_at, name, state FROM sessions`
+	query := `SELECT id, created_at, updated_at, name, state, db_path FROM sessions`
 	rows, err := sessionDB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to list sessions: %v", err)
@@ -155,7 +157,7 @@ func ListSessions() ([]Session, error) {
 
 	for rows.Next() {
 		var session Session
-		if err := rows.Scan(&session.ID, &session.CreatedAt, &session.UpdatedAt, &session.Name, &session.State); err != nil {
+		if err := rows.Scan(&session.ID, &session.CreatedAt, &session.UpdatedAt, &session.Name, &session.State, &session.DBPath); err != nil {
 			return nil, fmt.Errorf("Failed to read session data: %v", err)
 		}
 		sessions = append(sessions, session)

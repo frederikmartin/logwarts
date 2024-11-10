@@ -65,11 +65,17 @@ var sessionCmd = &cobra.Command{
 				fmt.Println("Session name is required for 'create'")
 				return
 			}
-			if err := session.CreateSession(args[1]); err != nil {
+			wd, err := os.Getwd()
+			if err != nil {
+				fmt.Printf("Error creating session: %v\n", err)
+				return
+			}
+			dbPath := fmt.Sprintf("%s/logwarts.duckdb", wd)
+			if err := session.CreateSession(args[1], dbPath); err != nil {
 				fmt.Println("Error creating session:", err)
 			}
 
-			dbConn, err := db.Connect("logwarts.duckdb")
+			dbConn, err := db.Connect(dbPath)
 			if err != nil {
 				fmt.Printf("Failed to connect to db: %v\n", err)
 				return
@@ -101,13 +107,18 @@ var sessionCmd = &cobra.Command{
 			fmt.Println("Sessions:")
 			for _, session := range sessions {
 				if session.State == "active" {
-					fmt.Printf("- %s (active)\n", session.Name)
+					fmt.Printf("- %s (active), log db: %s\n", session.Name, session.DBPath)
 				} else {
-					fmt.Printf("- %s\n", session.Name)
+					fmt.Printf("- %s, log db: %s\n", session.Name, session.DBPath)
 				}
 			}
 		case "kill":
-			dbConn, err := db.Connect("logwarts.duckdb")
+			sess, err := session.GetActiveSession()
+			if err != nil {
+				fmt.Printf("Failed to get active session: %v\n", err)
+				return
+			}
+			dbConn, err := db.Connect(sess.DBPath)
 			if err != nil {
 				fmt.Printf("Failed to connect to db: %v\n", err)
 				return
@@ -152,7 +163,12 @@ var importCmd = &cobra.Command{
 				return
 			}
 
-			dbConn, err := db.Connect("logwarts.duckdb")
+			sess, err := session.GetActiveSession()
+			if err != nil {
+				fmt.Printf("Failed to get active session: %v\n", err)
+				return
+			}
+			dbConn, err := db.Connect(sess.DBPath)
 			if err != nil {
 				fmt.Printf("Failed to connect to db: %v\n", err)
 				return
@@ -180,7 +196,12 @@ var importCmd = &cobra.Command{
 				os.Exit(1)
 			}
 
-			dbConn, err := db.Connect("logwarts.duckdb")
+			sess, err := session.GetActiveSession()
+			if err != nil {
+				fmt.Printf("Failed to get active session: %v\n", err)
+				return
+			}
+			dbConn, err := db.Connect(sess.DBPath)
 			if err != nil {
 				fmt.Printf("Failed to connect to db: %v\n", err)
 				return
@@ -216,7 +237,12 @@ var queryCmd = &cobra.Command{
 
 		sqlQuery := strings.Replace(args[0], "alb_logs", tableName, 1)
 
-		dbConn, err := db.Connect("logwarts.duckdb")
+		sess, err := session.GetActiveSession()
+		if err != nil {
+			fmt.Printf("Failed to get active session: %v\n", err)
+			return
+		}
+		dbConn, err := db.Connect(sess.DBPath)
 		if err != nil {
 			fmt.Printf("Failed to connect to db: %v\n", err)
 			os.Exit(1)
@@ -242,7 +268,12 @@ var statsCmd = &cobra.Command{
 	Use:   "stats",
 	Short: "Show performance statistics",
 	Run: func(cmd *cobra.Command, args []string) {
-		dbConn, err := db.Connect("logwarts.duckdb")
+		sess, err := session.GetActiveSession()
+		if err != nil {
+			fmt.Printf("Failed to get active session: %v\n", err)
+			return
+		}
+		dbConn, err := db.Connect(sess.DBPath)
 		if err != nil {
 			fmt.Printf("Failed to connect to db: %v\n", err)
 			os.Exit(1)
