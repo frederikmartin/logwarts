@@ -94,6 +94,10 @@ var sessionCmd = &cobra.Command{
 				fmt.Println("Error listing sessions:", err)
 				return
 			}
+			if len(sessions) < 1 {
+				fmt.Println("No sessions available")
+				return
+			}
 			fmt.Println("Sessions:")
 			for _, session := range sessions {
 				if session.State == "active" {
