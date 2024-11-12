@@ -50,11 +50,11 @@ func init() {
 
 	statsCmd.Flags().StringVarP(&statsRequestFilter, "filter", "f", "", "Regex pattern to filter requests")
 
-	rootCmd.AddCommand(sessionCmd, importCmd, queryCmd, statsCmd)
+	rootCmd.AddCommand(sessionCmd, importCmd, queryCmd, statsCmd, fieldsCmd)
 }
 
 var sessionCmd = &cobra.Command{
-	Use:   "session [create|attach|list|kill] name",
+	Use:   "session [create|attach|list|kill]",
 	Short: "Manage sessions (create, attach, list, kill)",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -104,12 +104,11 @@ var sessionCmd = &cobra.Command{
 				fmt.Println("No sessions available")
 				return
 			}
-			fmt.Println("Sessions:")
 			for _, session := range sessions {
 				if session.State == "active" {
-					fmt.Printf("- %s (active), log db: %s\n", session.Name, session.DBPath)
+					fmt.Printf("%s (active), log db: %s\n", session.Name, session.DBPath)
 				} else {
-					fmt.Printf("- %s, log db: %s\n", session.Name, session.DBPath)
+					fmt.Printf("%s, log db: %s\n", session.Name, session.DBPath)
 				}
 			}
 		case "kill":
@@ -295,6 +294,55 @@ var statsCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("Failed to display results: %v\n", err)
 			os.Exit(1)
+		}
+	},
+}
+
+var fieldsCmd = &cobra.Command{
+	Use:   "fields [list]",
+	Short: "Manage log fields available for queries (list)",
+	Args:  cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		action := args[0]
+		switch action {
+		case "list":
+			fields := []string{
+				"type",
+				"time",
+				"elb",
+				"client",
+				"target",
+				"request_processing_time",
+				"target_processing_time",
+				"response_processing_time",
+				"elb_status_code",
+				"target_status_code",
+				"received_bytes",
+				"sent_bytes",
+				"request",
+				"user_agent",
+				"ssl_cipher",
+				"ssl_protocol",
+				"target_group_arn",
+				"trace_id",
+				"domain_name",
+				"chosen_cert_arn",
+				"matched_rule_priority",
+				"request_creation_time",
+				"actions_executed",
+				"redirect_url",
+				"error_reason",
+				"target_port_list",
+				"target_status_code_list",
+				"classification",
+				"classification_reason",
+				"conn_trace_id",
+			}
+			for _, field := range fields {
+				fmt.Printf("%s\n", field)
+			}
+		default:
+			fmt.Println("Unknown session command. Use 'create', 'attach', 'list', or 'kill'")
 		}
 	},
 }
