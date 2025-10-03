@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -89,9 +90,18 @@ func ImportLogFile(db *sql.DB, logFilePath string) error {
 	}
 	tableName := fmt.Sprintf("alb_logs_%s", activeSessions.Name)
 
+	tmpFile := logFilePath + ".tmp"
+	awkCmd := fmt.Sprintf(`awk 'NF > 0 {OFS=" "; for(i=1;i<=30;i++) printf "%%s%%s", $i, (i<30?" ":"\n")}' "%s" > "%s"`, logFilePath, tmpFile)
+
+	cmd := exec.Command("sh", "-c", awkCmd)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("Failed to preprocess log file: %v", err)
+	}
+	defer os.Remove(tmpFile)
+
 	query := fmt.Sprintf(`
-		COPY %s FROM '%s' (DELIMITER ' ', HEADER FALSE, QUOTE '"', ESCAPE '"', NULL '-');
-	`, tableName, logFilePath)
+		COPY %s FROM '%s' (DELIMITER ' ', HEADER FALSE, QUOTE '"', ESCAPE '"', NULL '-', AUTO_DETECT FALSE, NULL_PADDING TRUE, IGNORE_ERRORS TRUE);
+	`, tableName, tmpFile)
 	_, err = db.Exec(query)
 	if err != nil {
 		return fmt.Errorf("Failed to import log file: %v", err)
