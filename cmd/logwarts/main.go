@@ -12,6 +12,7 @@ import (
 	"github.com/frederikmartin/logwarts/internal/output"
 	"github.com/frederikmartin/logwarts/internal/s3"
 	"github.com/frederikmartin/logwarts/internal/session"
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -174,12 +175,27 @@ var importCmd = &cobra.Command{
 			}
 			defer dbConn.Close()
 
-			err = db.ImportDirectoryLogs(dbConn, downloadDir)
+			files, err := os.ReadDir(downloadDir)
 			if err != nil {
-				fmt.Printf("Failed to import logs from directory: %v\n", err)
+				fmt.Printf("Failed to read download directory: %v\n", err)
 				return
 			}
-			fmt.Printf("Successfully imported logs from S3 to db\n")
+			fileCount := 0
+			for _, file := range files {
+				if !file.IsDir() && strings.HasSuffix(file.Name(), ".csv") {
+					fileCount++
+				}
+			}
+
+			bar := progressbar.Default(int64(fileCount), "Importing logs from S3")
+			err = db.ImportDirectoryLogs(dbConn, downloadDir, func(current, total int) {
+				bar.Set(current)
+			})
+			if err != nil {
+				fmt.Printf("\nFailed to import logs from directory: %v\n", err)
+				return
+			}
+			fmt.Printf("\nSuccessfully imported %d file(s) from S3 to db\n", fileCount)
 
 		} else if source == "local" {
 			var files []string
@@ -207,14 +223,19 @@ var importCmd = &cobra.Command{
 			}
 			defer dbConn.Close()
 
+			bar := progressbar.Default(int64(len(files)), "Importing logs")
+			successCount := 0
 			for _, filePath := range files {
 				err := db.ImportLogFile(dbConn, filePath)
 				if err != nil {
-					fmt.Printf("Failed to import file '%s': %v\n", filePath, err)
+					fmt.Printf("\nFailed to import file '%s': %v\n", filePath, err)
+					bar.Add(1)
 					continue
 				}
+				successCount++
+				bar.Add(1)
 			}
-			fmt.Printf("Successfully imported %d file(s)\n", len(files))
+			fmt.Printf("\nSuccessfully imported %d/%d file(s)\n", successCount, len(files))
 
 		} else {
 			fmt.Println("Invalid source specified. Use 's3' or 'local'.")

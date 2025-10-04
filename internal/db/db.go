@@ -103,20 +103,28 @@ func ImportLogFile(db *sql.DB, logFilePath string) error {
 	return nil
 }
 
-func ImportDirectoryLogs(db *sql.DB, dirPath string) error {
+func ImportDirectoryLogs(db *sql.DB, dirPath string, progressCallback func(current, total int)) error {
 	files, err := os.ReadDir(dirPath)
 	if err != nil {
 		return fmt.Errorf("Failed to read directory '%s': %v", dirPath, err)
 	}
 
+	var logFiles []os.DirEntry
 	for _, file := range files {
 		if !file.IsDir() && strings.HasSuffix(file.Name(), ".csv") {
-			filePath := filepath.Join(dirPath, file.Name())
-			err := ImportLogFile(db, filePath)
-			if err != nil {
-				fmt.Printf("Failed to import file '%s': %v\n", filePath, err)
-				continue
-			}
+			logFiles = append(logFiles, file)
+		}
+	}
+
+	total := len(logFiles)
+	for i, file := range logFiles {
+		filePath := filepath.Join(dirPath, file.Name())
+		err := ImportLogFile(db, filePath)
+		if err != nil {
+			fmt.Printf("Failed to import file '%s': %v\n", filePath, err)
+		}
+		if progressCallback != nil {
+			progressCallback(i+1, total)
 		}
 	}
 	return nil
