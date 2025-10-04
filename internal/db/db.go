@@ -111,7 +111,7 @@ func ImportDirectoryLogs(db *sql.DB, dirPath string, progressCallback func(curre
 
 	var logFiles []os.DirEntry
 	for _, file := range files {
-		if !file.IsDir() && strings.HasSuffix(file.Name(), ".csv") {
+		if !file.IsDir() && (strings.HasSuffix(file.Name(), ".log") || strings.HasSuffix(file.Name(), ".log.gz")) {
 			logFiles = append(logFiles, file)
 		}
 	}

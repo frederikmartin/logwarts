@@ -182,7 +182,7 @@ var importCmd = &cobra.Command{
 			}
 			fileCount := 0
 			for _, file := range files {
-				if !file.IsDir() && strings.HasSuffix(file.Name(), ".csv") {
+				if !file.IsDir() && (strings.HasSuffix(file.Name(), ".log") || strings.HasSuffix(file.Name(), ".log.gz")) {
 					fileCount++
 				}
 			}
