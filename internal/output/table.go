@@ -7,7 +7,6 @@ import (
 	"golang.org/x/term"
 	"os"
 	"strings"
-	"unicode/utf8"
 )
 
 type Table struct {
@@ -69,17 +68,18 @@ func getTerminalWidth() (int, error) {
 }
 
 func wrapText(text string, width int) string {
-	if utf8.RuneCountInString(text) <= width {
+	runes := []rune(text)
+	if len(runes) <= width {
 		return text
 	}
 
 	var wrapped strings.Builder
-	for len(text) > width {
-		wrapped.WriteString(text[:width])
+	for len(runes) > width {
+		wrapped.WriteString(string(runes[:width]))
 		wrapped.WriteString("\n")
-		text = text[width:]
+		runes = runes[width:]
 	}
-	wrapped.WriteString(text)
+	wrapped.WriteString(string(runes))
 
 	return wrapped.String()
 }
