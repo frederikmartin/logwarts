@@ -358,6 +358,9 @@ var fieldsCmd = &cobra.Command{
 				"classification",
 				"classification_reason",
 				"conn_trace_id",
+				"transformed_host",
+				"transformed_uri",
+				"request_transform_status",
 			}
 			for _, field := range fields {
 				fmt.Printf("%s\n", field)

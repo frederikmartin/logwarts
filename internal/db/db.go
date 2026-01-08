@@ -72,9 +72,9 @@ func InitializeLogTable(db *sql.DB) error {
 			classification VARCHAR,
 			classification_reason VARCHAR,
 			conn_trace_id VARCHAR,
-			unkown_field_1 VARCHAR,
-			unkown_field_2 VARCHAR,
-			unkown_field_3 VARCHAR,
+			transformed_host VARCHAR,
+			transformed_uri VARCHAR,
+			request_transform_status VARCHAR,
 		);
 	`, tableName)
 	_, err = db.Exec(query)
@@ -93,7 +93,16 @@ func ImportLogFile(db *sql.DB, logFilePath string) error {
 	tableName := fmt.Sprintf("alb_logs_%s", activeSessions.Name)
 
 	query := fmt.Sprintf(`
-		COPY %s FROM '%s' (DELIMITER ' ', HEADER FALSE, QUOTE '"', ESCAPE '"', NULL '-');
+		COPY %s FROM '%s' (
+			DELIMITER ' ',
+			HEADER FALSE,
+			QUOTE '"',
+			ESCAPE '"',
+			NULL '-',
+			ALLOW_QUOTED_NULLS TRUE,
+			NULL_PADDING TRUE,
+			IGNORE_ERRORS TRUE
+		);
 	`, tableName, logFilePath)
 	_, err = db.Exec(query)
 	if err != nil {
@@ -156,18 +165,18 @@ func GetFilteredStats(db *sql.DB, filter string) (*sql.Rows, error) {
 
 	query := fmt.Sprintf(`
 	SELECT
-            DATE_TRUNC('minute', time) AS minute,
-            COUNT(*) AS requests,
-            MIN(target_processing_time) AS min_response_time,
-            MAX(target_processing_time) AS max_response_time,
-            AVG(target_processing_time) AS avg_response_time
-        FROM
-            %s
+		DATE_TRUNC('minute', time) AS minute,
+		COUNT(*) AS requests,
+		MIN(TRY_CAST(target_processing_time AS DOUBLE)) AS min_response_time,
+		MAX(TRY_CAST(target_processing_time AS DOUBLE)) AS max_response_time,
+		AVG(TRY_CAST(target_processing_time AS DOUBLE)) AS avg_response_time
+	FROM
+		%s
 	WHERE REGEXP_MATCHES(request, '%s')
 	GROUP BY
-            minute
-        ORDER BY
-            minute;
+		minute
+	ORDER BY
+		minute;
 	`, tableName, filter)
 
 	return db.Query(query)
